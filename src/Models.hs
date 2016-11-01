@@ -15,6 +15,8 @@ module Models where
 
 import           Control.Monad.Reader
 import           Data.Aeson           (FromJSON, ToJSON)
+import           Data.Time.Clock      (UTCTime)
+import           Data.Time.Calendar   (Day)
 import           Database.Persist.Sql
 import           Database.Persist.TH  (mkMigrate, mkPersist, persistLowerCase,
                                        share, sqlSettings)
@@ -27,6 +29,17 @@ User json
     name String
     email String
     deriving Show
+
+SleepSession json
+    start UTCTime
+    end UTCTime 
+    deriving Show
+
+SleepInDay json
+    date Day
+    sleeps [SleepSession]
+    deriving Show
+
 |]
 
 doMigrations :: SqlPersistT IO ()
