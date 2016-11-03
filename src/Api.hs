@@ -17,17 +17,25 @@ import           Config                      (App (..), Config (..))
 import           Models
 
 import           Api.User
+import           Api.Sleep
 
 -- | This is the function we export to run our 'UserAPI'. Given
 -- a 'Config', we return a WAI 'Application' which any WAI compliant server
 -- can run.
-userApp :: Config -> Application
-userApp cfg = serve (Proxy :: Proxy UserAPI) (appToServer cfg)
+-- userApp :: Config -> Application
+-- userApp cfg = serve (Proxy :: Proxy UserAPI) (appToServer cfg)
+
+allApp :: Config -> Application
+allApp cfg = serve (Proxy :: Proxy AppAPI) (appToServer cfg)
 
 -- | This functions tells Servant how to run the 'App' monad with our
 -- 'server' function.
-appToServer :: Config -> Server UserAPI
-appToServer cfg = enter (convertApp cfg) userServer
+
+appToServer :: Config -> Server AppAPI
+appToServer cfg = enter (convertApp cfg) appServer
+
+appServer :: ServerT AppAPI App
+appServer = sleepServer :<|> userServer 
 
 -- | This function converts our 'App' monad into the @ExceptT ServantErr
 -- IO@ monad that Servant's 'enter' function needs in order to run the
@@ -48,7 +56,7 @@ files = serveDirectory "assets"
 -- two different APIs and applications. This is a powerful tool for code
 -- reuse and abstraction! We need to put the 'Raw' endpoint last, since it
 -- always succeeds.
-type AppAPI = UserAPI :<|> Raw
+type AppAPI = SleepAPI :<|> UserAPI 
 
 appApi :: Proxy AppAPI
 appApi = Proxy
@@ -57,4 +65,4 @@ appApi = Proxy
 -- alongside the 'Raw' endpoint that serves all of our files.
 app :: Config -> Application
 app cfg =
-    serve appApi (appToServer cfg :<|> files)
+    serve appApi $ appToServer cfg 
