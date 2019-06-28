@@ -1,0 +1,52 @@
+library:
+  source-dirs: src
+  dependencies:
+  - text
+  - persistent-template
+  - persistent-sqlite
+  - persistent
+  - base >=4.7 && <5
+  - aeson
+  - servant-server
+  - wai
+  - warp
+  exposed-modules:
+  - Lib
+tests:
+  sleepchart-server-test:
+    source-dirs: test
+    main: Spec.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - base
+    - sleepchart-server
+    - hspec
+    - hspec-wai
+    - hspec-wai-json
+    - aeson
+copyright: 2019 Author name here
+category: Web
+maintainer: example@example.com
+name: sleepchart-server
+version: 0.1.0.0
+extra-source-files:
+- README.md
+author: Author name here
+github: githubuser/sleepchart-server
+license: BSD3
+executables:
+  sleepchart-server-exe:
+    source-dirs: app
+    main: Main.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - base
+    - sleepchart-server
+    - sleepchart-server
+    - sleepchart-server

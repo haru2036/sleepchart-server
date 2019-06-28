@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Lib
     ( startApp
     , app
@@ -11,14 +12,9 @@ import Data.Aeson.TH
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
+import Model
 
-data User = User
-  { userId        :: Int
-  , userFirstName :: String
-  , userLastName  :: String
-  } deriving (Eq, Show)
 
-$(deriveJSON defaultOptions ''User)
 
 type API = "users" :> Get '[JSON] [User]
 
@@ -35,6 +31,6 @@ server :: Server API
 server = return users
 
 users :: [User]
-users = [ User 1 "Isaac" "Newton"
-        , User 2 "Albert" "Einstein"
+users = [ User "Isaac" "Newton" $ Just 25
+        , User "Albert" "Einstein" $ Just 50
         ]
