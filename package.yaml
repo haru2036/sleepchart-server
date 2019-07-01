@@ -12,8 +12,14 @@ library:
   - servant-auth
   - servant-auth-server
   - jose-jwt
+  - jose
   - wai
   - warp
+  - bytestring
+  - mtl
+  - transformers
+  - lens
+  - protolude
   exposed-modules:
   - Lib
 tests:
