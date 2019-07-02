@@ -8,13 +8,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Lib
     ( startApp
-    , app
     ) where
 
 import Protolude hiding(fromStrict)
 import Data.Aeson
 import Data.Aeson.TH
-import Data.Text (Text)
+import Data.Text (Text, words, pack)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy (fromStrict)
 import Data.List (find, lookup)
@@ -22,9 +21,10 @@ import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
 import Servant.Server
-import Servant.Server.Experimental.Auth
-import Crypto.JWT (SignedJWT, JWTError, ClaimsSet, decodeCompact, defaultJWTValidationSettings, verifyClaims, claimSub, FromCompact, AsError, StringOrURI)
-import Crypto.JOSE.JWK (JWK, fromOctets)
+import Servant.Auth.Server
+import Crypto.JWT (SignedJWT, JWTError, ClaimsSet, decodeCompact, defaultJWTValidationSettings, verifyClaims, claimSub, FromCompact, AsError, StringOrURI, JWTValidationSettings)
+import Crypto.JOSE.JWK (JWK, fromOctets, JWKSet(..))
+import Crypto.JOSE.JWA.JWS (Alg(..))
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans
 import Control.Monad.Except (catchError)
@@ -32,65 +32,52 @@ import Control.Lens ((^.))
 import Model
 
 
-type API = "users" :> Get '[JSON] [User]
-        :<|> ProtectedAPI
+type API auths  = "users" :> Get '[JSON] [User]
+        :<|> (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = AuthProtect "protected" :> Get '[JSON] Text
+type ProtectedAPI = Auth '[JWT, Cookie] User :> "protected" :> Get '[JSON] Text
 
-type instance AuthServerData (AuthProtect "protected") = User
+protected :: Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
+protected (Servant.Auth.Server.Authenticated user) = return $ txt user
+protected _ =  throwAll err401
+
+data AuthResult val
+  = BadPassword
+  | NoSuchUser
+  | Authenticated val
+  | Indefinite
 
 startApp :: IO ()
-startApp = run 8080 app
+startApp = do
+  -- We generate the key for signing tokens. This would generally be persisted,
+  -- and kept safely
+  myKey <- generateKey
+  -- Adding some configurations. All authentications require CookieSettings to
+  -- be in the context.
+  let jsonJwk = "" :: ByteString
+  let Just decoded = decode $ fromStrict jsonJwk 
+  let Success jwkset = fromJSON decoded
+  let jwk = fromOctets jsonJwk
+      
+  let jwtCfg = JWTSettings jwk (Just RS256) jwkset matchAud
+      cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
+      --- Here we actually make concrete
+      api = Proxy :: Proxy (API '[JWT])
+  run 8080 $ serveWithContext api cfg (server defaultCookieSettings jwtCfg)
+      where matchAud "" = Matches
+            matchAud _ = DoesNotMatch
+          
 
-app :: Application
-app = serveWithContext api authServerContext server
-
-api :: Proxy API
+api :: Proxy (API '[JWT])
 api = Proxy
 
-server :: Server API
-server = (return users) :<|> txt
+server :: CookieSettings -> JWTSettings -> Server (API auths)
+server cs jwts = (return users) :<|> protected
 
-txt :: AuthServerData (AuthProtect "protected") -> Handler Text
-txt _ = return "hogehogehoge-"
+txt :: User -> Handler Text
+txt user = return $ pack $ show user
 
 users :: [User]
 users = [ User "Isaac" "" $ Just 25
         , User "Albert" "Einstein" $ Just 50
         ]
-
-authServerContext :: Context (AuthHandler Request User ': '[])
-authServerContext = authHandler :. EmptyContext
-
-authHandler :: AuthHandler Request User 
-authHandler = mkAuthHandler handler
-  where
-    handler :: Request -> Handler User
-    handler req =
-        case lookup "X-Servant-Auth-Token" (requestHeaders req) of
-            Nothing  -> throwError $ err401 { errBody = "Missing token header" }
-            Just sid -> do
-                        let jsonJwk = "" :: ByteString
-                        let jwk = fromOctets jsonJwk
-                        eithersignedjwt <- runExceptT $ do
-                          decodeCompact (fromStrict sid) :: (FromCompact a, MonadError JWTError m) => m a 
-                        case eithersignedjwt of
-                          Right (signedjwt :: SignedJWT) -> do
-                            result <- liftIO $ doJwtVerify jwk signedjwt
-                            case result of
-                              Right claimsSet -> do
-                                let a = claimsSet ^. claimSub 
-                                {- case claimsSet ^. claimSub >>= (\sub -> find (\item -> ((show (sub :: StringOrURI)) :: String) == ((show $ userUid $ item)) :: String) users) of
-                                  Just usr -> return usr
-                                  Nothing -> throwError $ err401 { errBody = "user not found" }
-                                  -}
-                                return $ User "hoge" "piyo" $ Just 25
-                              Left err -> throwError $ err401 { errBody = "invalid claim" }
-                          Left err -> throwError $ err401 { errBody = "jwt decode error" }
-                        where
-                          doJwtVerify :: JWK -> SignedJWT -> IO (Either JWTError ClaimsSet)
-                          doJwtVerify jwk jwt = runExceptT $ do
-                            let config = defaultJWTValidationSettings (== "bob")
-                            verifyClaims config jwk jwt
-
-
