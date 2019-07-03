@@ -54,20 +54,19 @@ startApp = do
   -- Adding some configurations. All authentications require CookieSettings to
   -- be in the context.
   jsonJwk <- readFile "./jwk.json" 
-  let Just decoded = decode $ fromStrict jsonJwk 
-  let Success jwkset = fromJSON decoded
+  let Just (Success jwkset) = fromJSON <$> decode (fromStrict jsonJwk)
   let jwk = fromOctets jsonJwk
-  Just trustedAudience <- readFile "./audience.json"  >>= return . decode . fromStrict
-  let jwtCfg = JWTSettings jwk (Just RS256) jwkset (matchAud trustedAudience)
+  Just trustedAudiences <- decode . fromStrict <$> readFile "./audience.json"
+  let jwtCfg = JWTSettings jwk (Just RS256) jwkset (matchAud trustedAudiences)
       cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
       --- Here we actually make concrete
       api = Proxy :: Proxy (API '[JWT])
+      matchAud :: [StringOrURI] -> StringOrURI -> IsMatch
+      matchAud trusteds aud = case find (== aud) trusteds of
+                                Just _ -> Matches
+                                Nothing -> DoesNotMatch
+  putStrLn ("starting server at port 8080" :: Text)
   run 8080 $ serveWithContext api cfg (server defaultCookieSettings jwtCfg)
-      where matchAud :: [StringOrURI] -> StringOrURI -> IsMatch
-            matchAud trusteds aud = case find (== aud) trusteds of
-                                      Just _ -> Matches
-                                      Nothing -> DoesNotMatch
-          
 
 api :: Proxy (API '[JWT])
 api = Proxy
