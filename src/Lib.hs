@@ -10,11 +10,11 @@ module Lib
     ( startApp
     ) where
 
-import Protolude hiding(fromStrict)
+import Protolude hiding(fromStrict, readFile)
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Text (Text, words, pack)
-import Data.ByteString (ByteString)
+import Data.ByteString (ByteString, readFile)
 import Data.ByteString.Lazy (fromStrict)
 import Data.List (find, lookup)
 import Network.Wai
@@ -22,7 +22,7 @@ import Network.Wai.Handler.Warp
 import Servant
 import Servant.Server
 import Servant.Auth.Server
-import Crypto.JWT (SignedJWT, JWTError, ClaimsSet, decodeCompact, defaultJWTValidationSettings, verifyClaims, claimSub, FromCompact, AsError, StringOrURI, JWTValidationSettings)
+import Crypto.JWT (SignedJWT, JWTError, ClaimsSet, stringOrUri, decodeCompact, defaultJWTValidationSettings, verifyClaims, claimSub, FromCompact, AsError, StringOrURI, JWTValidationSettings)
 import Crypto.JOSE.JWK (JWK, fromOctets, JWKSet(..))
 import Crypto.JOSE.JWA.JWS (Alg(..))
 import Control.Monad.Trans.Except (runExceptT)
@@ -51,21 +51,22 @@ startApp :: IO ()
 startApp = do
   -- We generate the key for signing tokens. This would generally be persisted,
   -- and kept safely
-  myKey <- generateKey
   -- Adding some configurations. All authentications require CookieSettings to
   -- be in the context.
-  let jsonJwk = "" :: ByteString
+  jsonJwk <- readFile "./jwk.json" 
   let Just decoded = decode $ fromStrict jsonJwk 
   let Success jwkset = fromJSON decoded
   let jwk = fromOctets jsonJwk
-      
-  let jwtCfg = JWTSettings jwk (Just RS256) jwkset matchAud
+  Just trustedAudience <- readFile "./audience.json"  >>= return . decode . fromStrict
+  let jwtCfg = JWTSettings jwk (Just RS256) jwkset (matchAud trustedAudience)
       cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
       --- Here we actually make concrete
       api = Proxy :: Proxy (API '[JWT])
   run 8080 $ serveWithContext api cfg (server defaultCookieSettings jwtCfg)
-      where matchAud "" = Matches
-            matchAud _ = DoesNotMatch
+      where matchAud :: [StringOrURI] -> StringOrURI -> IsMatch
+            matchAud trusteds aud = case find (== aud) trusteds of
+                                      Just _ -> Matches
+                                      Nothing -> DoesNotMatch
           
 
 api :: Proxy (API '[JWT])
