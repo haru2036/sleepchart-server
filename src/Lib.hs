@@ -49,10 +49,6 @@ data AuthResult val
 
 startApp :: IO ()
 startApp = do
-  -- We generate the key for signing tokens. This would generally be persisted,
-  -- and kept safely
-  -- Adding some configurations. All authentications require CookieSettings to
-  -- be in the context.
   jsonJwk <- readFile "./jwk.json" 
   let Just (Success jwkset) = fromJSON <$> decode (fromStrict jsonJwk)
   let jwk = fromOctets jsonJwk
