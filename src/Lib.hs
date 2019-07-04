@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Lib
     ( startApp
+    , app
     ) where
 
 import Protolude hiding(fromStrict, readFile)
@@ -62,7 +63,10 @@ startApp = do
                                 Just _ -> Matches
                                 Nothing -> DoesNotMatch
   putStrLn ("starting server at port 8080" :: Text)
-  run 8080 $ serveWithContext api cfg (server defaultCookieSettings jwtCfg)
+  run 8080 $ app cfg defaultCookieSettings jwtCfg
+
+app :: Context '[CookieSettings, JWTSettings] -> CookieSettings -> JWTSettings -> Application
+app cfg cookieSettings jwtCfg = serveWithContext api cfg (server cookieSettings jwtCfg)
 
 api :: Proxy (API '[JWT])
 api = Proxy

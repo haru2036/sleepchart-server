@@ -33,10 +33,18 @@ tests:
     dependencies:
     - base
     - sleepchart-server
+    - protolude
+    - bytestring
     - hspec
     - hspec-wai
     - hspec-wai-json
     - aeson
+    - servant
+    - servant-server
+    - servant-auth
+    - servant-auth-server
+    - jose-jwt
+    - jose
 copyright: 2019 Author name here
 category: Web
 maintainer: example@example.com
