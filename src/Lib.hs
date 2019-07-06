@@ -35,10 +35,10 @@ import Model
 type API auths  = "users" :> Get '[JSON] [User]
         :<|> (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = Auth '[JWT, Cookie] User :> "protected" :> Get '[JSON] Text
+type ProtectedAPI = "protected" :> Get '[JSON] Text
 
 protected :: Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
-protected (Servant.Auth.Server.Authenticated user) = return $ txt user
+protected (Servant.Auth.Server.Authenticated user) = txt user
 protected _ =  throwAll err401
 
 data AuthResult val
