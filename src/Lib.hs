@@ -29,6 +29,8 @@ import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans
 import Control.Monad.Except (catchError)
 import Control.Lens ((^.))
+import Database.Persist.Sql
+import DataStore.Internal
 import Model
 
 
@@ -61,14 +63,16 @@ startApp = do
       matchAud trusteds aud = case find (== aud) trusteds of
                                 Just _ -> Matches
                                 Nothing -> DoesNotMatch
+  doMigration migrateAll
+  pool <- pgPool
   putStrLn ("starting server at port 8080" :: Text)
-  run 8080 $ serveWithContext api cfg (server defaultCookieSettings jwtCfg)
+  run 8080 $ serveWithContext api cfg (server pool defaultCookieSettings jwtCfg)
 
 api :: Proxy (API '[JWT])
 api = Proxy
 
-server :: CookieSettings -> JWTSettings -> Server (API auths)
-server cs jwts = (return users) :<|> protected
+server :: ConnectionPool -> CookieSettings -> JWTSettings -> Server (API auths)
+server pool cs jwts = (return users) :<|> protected
 
 txt :: User -> Handler Text
 txt user = return $ pack $ show user
