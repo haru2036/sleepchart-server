@@ -2,3 +2,4 @@
 *.swp
 jwk.json
 audience.json
+conf/database-setting.yml
