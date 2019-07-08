@@ -4,6 +4,8 @@ library:
   - text
   - persistent-template
   - persistent-sqlite
+  - persistent-postgresql
+  - yaml
   - persistent
   - base >=4.7 && <5
   - aeson
@@ -20,6 +22,8 @@ library:
   - transformers
   - lens
   - protolude
+  - monad-logger
+  - resourcet
   exposed-modules:
   - Lib
 tests:
