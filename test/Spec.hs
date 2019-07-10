@@ -37,7 +37,6 @@ main = return ()
                                     Just _ -> Matches
                                     Nothing -> DoesNotMatch
     hspec $ spec cfg defaultCookieSettings jwtCfg
-    -}
 
 spec :: Context '[CookieSettings, JWTSettings] -> CookieSettings -> JWTSettings -> Spec
 spec context cookieCfg jwtCfg = with (return (app context cookieCfg jwtCfg)) $ do
@@ -47,3 +46,4 @@ spec context cookieCfg jwtCfg = with (return (app context cookieCfg jwtCfg)) $ d
     describe "GET /protected" $ do
         it "responds with 401" $ do
             get "/protected" `shouldRespondWith` 401
+    -}
