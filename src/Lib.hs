@@ -33,16 +33,18 @@ import Control.Lens ((^.))
 import Database.Persist.Sql
 import DataStore.Internal
 import Model
+import Api.Sleep
 
 
-type API auths  = "users" :> Get '[JSON] [User]
-        :<|> (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
+type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = "protected" :> Get '[JSON] Text
+type ProtectedAPI = "protected" :> "sleeps" :> Get '[JSON] [Sleep]
+               :<|> "protected" :> "sleeps" :> ReqBody '[JSON] [Sleep] :> Post '[JSON] [Sleep]
 
-protected :: Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
-protected (Servant.Auth.Server.Authenticated user) = txt user
-protected _ =  throwAll err401
+protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
+protected pool (Servant.Auth.Server.Authenticated user) = getSleeps pool user
+                                                :<|> postSleeps pool user
+protected _ _ =  throwAll err401
 
 data AuthResult val
   = BadPassword
@@ -76,12 +78,8 @@ api :: Proxy (API '[JWT])
 api = Proxy
 
 server :: ConnectionPool -> CookieSettings -> JWTSettings -> Server (API auths)
-server pool cs jwts = (return users) :<|> protected
+server pool cs jwts = protected pool
 
 txt :: User -> Handler Text
 txt user = return $ pack $ show user
 
-users :: [User]
-users = [ User "Isaac" "" $ Just 25
-        , User "Albert" "Einstein" $ Just 50
-        ]

@@ -1,8 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
 module DataStore.Internal where
 
 import Control.Monad.Logger         (runStdoutLoggingT)
-import Control.Monad.Trans.Reader   (runReaderT)
-import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.Trans.Reader   (runReaderT, ReaderT)
+import Control.Monad.Trans.Resource (runResourceT, MonadUnliftIO, )
 import Data.Yaml.Config             (loadYamlSettings
                                     , useEnv
                                     )
@@ -12,8 +13,12 @@ import Database.Persist.Postgresql  (PostgresConf(..)
                                     )
 import Database.Persist.Sql         (Migration
                                     , ConnectionPool
+                                    , BackendCompatible
+                                    , SqlBackend
                                     , runMigration
+                                    , runSqlPool
                                     )
+import Data.Pool
 
 pgConf :: IO PostgresConf
 pgConf = loadYamlSettings ["conf/database-setting.yml"] [] useEnv

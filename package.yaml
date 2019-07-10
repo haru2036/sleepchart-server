@@ -24,6 +24,8 @@ library:
   - protolude
   - monad-logger
   - resourcet
+  - time
+  - resource-pool
   exposed-modules:
   - Lib
 tests:
