@@ -41,11 +41,8 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
         email Text Maybe
         deriving Show
 
-    Sleeps
-        user User
-        deriving Show Eq
-
     Sleep json
+        user User
         start UTCTime
         end UTCTime
         deriving Show Eq
