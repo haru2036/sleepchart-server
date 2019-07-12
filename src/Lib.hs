@@ -38,8 +38,8 @@ import Api.Sleep
 
 type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = "protected" :> "sleeps" :> Get '[JSON] [Sleep]
-               :<|> "protected" :> "sleeps" :> ReqBody '[JSON] [Sleep] :> Post '[JSON] [Sleep]
+type ProtectedAPI = "protected" :> "sleeps" :> Get '[JSON] [ClientSleep]
+               :<|> "protected" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
 
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
 protected pool (Servant.Auth.Server.Authenticated user) = getSleeps pool user

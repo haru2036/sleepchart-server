@@ -6,13 +6,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 module Model where
 
+import           Protolude hiding (drop)
 import           Control.Monad.IO.Class         ( liftIO )
+import           Data.Aeson 
+import           Data.Aeson.TH (defaultOptions, Options(..), deriveJSON)
 import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
-import           Data.Text
+import           Data.Text (Text, pack)
 import           Servant.Auth.Server
 import           Control.Lens                   ( (^.)
                                                 , (^?!)
@@ -41,16 +45,22 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
         email Text Maybe
         deriving Show
 
-    Sleep json
+    Sleep 
         user User
         start UTCTime
         end UTCTime
         deriving Show Eq
 |]
 
-
 instance Eq User where
     (==) x y = (userUid x) == (userUid y)
+
+data ClientSleep = ClientSleep {csStart :: UTCTime
+                               ,csEnd :: UTCTime}
+                               deriving(Show, Eq)
+
+$(deriveJSON defaultOptions  ''ClientSleep)
+
 
 instance ToJWT User
 instance FromJWT User where
