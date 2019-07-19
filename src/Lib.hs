@@ -34,16 +34,19 @@ import Database.Persist.Sql
 import DataStore.Internal
 import Model
 import Api.Sleep
+import Api.User
 
 
 type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = "protected" :> "sleeps" :> Get '[JSON] [ClientSleep]
-               :<|> "protected" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
+type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
+               :<|> "api" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
+               :<|> "api" :> "register" :> Get '[JSON] RegisterResult
 
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
 protected pool (Servant.Auth.Server.Authenticated user) = getSleeps pool user
                                                 :<|> postSleeps pool user
+                                                :<|> registerUser pool user
 protected _ _ =  throwAll err401
 
 data AuthResult val
@@ -80,6 +83,4 @@ api = Proxy
 server :: ConnectionPool -> CookieSettings -> JWTSettings -> Server (API auths)
 server pool cs jwts = protected pool
 
-txt :: User -> Handler Text
-txt user = return $ pack $ show user
 
