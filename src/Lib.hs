@@ -35,6 +35,8 @@ import DataStore.Internal
 import Model
 import Api.Sleep
 import Api.User
+import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Client.TLS (tlsManagerSettings) 
 
 
 type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
@@ -57,8 +59,8 @@ data AuthResult val
 
 startApp :: IO ()
 startApp = do
-  jsonJwk <- readFile "./jwk.json" 
-  let Just (Success jwkset) = fromJSON <$> decode (fromStrict jsonJwk)
+  jsonJwk <- fetchKey
+  let Just (Success jwkset) = fromJSON <$> decode jsonJwk
   let jwk = fromOctets jsonJwk
   Just trustedAudiences <- decode . fromStrict <$> readFile "./audience.json"
   let jwtCfg = JWTSettings jwk (Just RS256) jwkset (matchAud trustedAudiences)
@@ -73,6 +75,12 @@ startApp = do
   pool <- pgPool
   putStrLn ("starting server at port 8080" :: Text)
   run 8080 $ app pool cfg defaultCookieSettings jwtCfg
+  where
+    fetchKey = do
+      manager <- HTTP.newManager tlsManagerSettings
+      request <- HTTP.parseRequest "https://www.googleapis.com/oauth2/v3/certs"
+      response <- HTTP.httpLbs request manager
+      return $ HTTP.responseBody response
 
 app :: ConnectionPool -> Context '[CookieSettings, JWTSettings] -> CookieSettings -> JWTSettings -> Application
 app pool cfg cookieSettings jwtCfg = serveWithContext api cfg (server pool cookieSettings jwtCfg)

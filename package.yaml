@@ -3,6 +3,8 @@ library:
   dependencies:
   - text
   - unliftio
+  - http-client
+  - http-client-tls
   - persistent
   - persistent-template
   - persistent-sqlite
