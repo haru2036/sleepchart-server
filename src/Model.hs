@@ -43,6 +43,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
         uid Uid Unique
         name Text Maybe
         email Text Maybe
+        UniqueUid uid
         deriving Show
 
     Sleep 
