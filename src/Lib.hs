@@ -33,16 +33,23 @@ import Control.Lens ((^.))
 import Database.Persist.Sql
 import DataStore.Internal
 import Model
+import Api.Sleep
+import Api.User
+import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Client.TLS (tlsManagerSettings) 
 
 
-type API auths  = "users" :> Get '[JSON] [User]
-        :<|> (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
+type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
-type ProtectedAPI = "protected" :> Get '[JSON] Text
+type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
+               :<|> "api" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
+               :<|> "api" :> "register" :> Get '[JSON] RegisterResult
 
-protected :: Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
-protected (Servant.Auth.Server.Authenticated user) = txt user
-protected _ =  throwAll err401
+protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
+protected pool (Servant.Auth.Server.Authenticated user) = getSleeps pool user
+                                                :<|> postSleeps pool user
+                                                :<|> registerUser pool user
+protected _ _ =  throwAll err401
 
 data AuthResult val
   = BadPassword
@@ -52,8 +59,8 @@ data AuthResult val
 
 startApp :: IO ()
 startApp = do
-  jsonJwk <- readFile "./jwk.json" 
-  let Just (Success jwkset) = fromJSON <$> decode (fromStrict jsonJwk)
+  jsonJwk <- fetchKey
+  let Just (Success jwkset) = fromJSON <$> decode jsonJwk
   let jwk = fromOctets jsonJwk
   Just trustedAudiences <- decode . fromStrict <$> readFile "./audience.json"
   let jwtCfg = JWTSettings jwk (Just RS256) jwkset (matchAud trustedAudiences)
@@ -68,6 +75,12 @@ startApp = do
   pool <- pgPool
   putStrLn ("starting server at port 8080" :: Text)
   run 8080 $ app pool cfg defaultCookieSettings jwtCfg
+  where
+    fetchKey = do
+      manager <- HTTP.newManager tlsManagerSettings
+      request <- HTTP.parseRequest "https://www.googleapis.com/oauth2/v3/certs"
+      response <- HTTP.httpLbs request manager
+      return $ HTTP.responseBody response
 
 app :: ConnectionPool -> Context '[CookieSettings, JWTSettings] -> CookieSettings -> JWTSettings -> Application
 app pool cfg cookieSettings jwtCfg = serveWithContext api cfg (server pool cookieSettings jwtCfg)
@@ -76,12 +89,6 @@ api :: Proxy (API '[JWT])
 api = Proxy
 
 server :: ConnectionPool -> CookieSettings -> JWTSettings -> Server (API auths)
-server pool cs jwts = (return users) :<|> protected
+server pool cs jwts = protected pool
 
-txt :: User -> Handler Text
-txt user = return $ pack $ show user
 
-users :: [User]
-users = [ User "Isaac" "" $ Just 25
-        , User "Albert" "Einstein" $ Just 50
-        ]

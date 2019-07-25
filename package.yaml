@@ -2,6 +2,10 @@ library:
   source-dirs: src
   dependencies:
   - text
+  - unliftio
+  - http-client
+  - http-client-tls
+  - persistent
   - persistent-template
   - persistent-sqlite
   - persistent-postgresql
@@ -24,6 +28,8 @@ library:
   - protolude
   - monad-logger
   - resourcet
+  - time
+  - resource-pool
   exposed-modules:
   - Lib
 tests:
