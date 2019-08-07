@@ -37,17 +37,20 @@ import Api.Sleep
 import Api.User
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (tlsManagerSettings) 
+import           Data.Time.Clock
 
 
 type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
 type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
                :<|> "api" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
+               :<|> "api" :> "sleeps" :> "range" :> QueryParam "start" UTCTime :> QueryParam "count" Int :> Get '[JSON] [ClientSleep]
                :<|> "api" :> "register" :> Get '[JSON] RegisterResult
 
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI
 protected pool (Servant.Auth.Server.Authenticated user) = getSleeps pool user
                                                 :<|> postSleeps pool user
+                                                :<|> getSleepsWithRange pool user
                                                 :<|> registerUser pool user
 protected _ _ =  throwAll err401
 
