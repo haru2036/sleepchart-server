@@ -1,5 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module Main (main) where
@@ -13,7 +11,6 @@ import Data.ByteString.Lazy (fromStrict)
 import Test.Hspec
 import Test.Hspec.Wai
 import Test.Hspec.Wai.JSON
-import Crypto.JWT (SignedJWT, JWTError, ClaimsSet, stringOrUri, decodeCompact, defaultJWTValidationSettings, verifyClaims, claimSub, FromCompact, AsError, StringOrURI, JWTValidationSettings)
 import Crypto.JOSE.JWK (JWK, fromOctets, JWKSet(..))
 import Crypto.JOSE.JWA.JWS (Alg(..))
 import Servant.Server
