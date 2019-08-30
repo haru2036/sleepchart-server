@@ -9,14 +9,19 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Model where
 
-import           Protolude hiding (drop)
+import           Protolude               hiding ( drop )
 import           Control.Monad.IO.Class         ( liftIO )
-import           Data.Aeson 
-import           Data.Aeson.TH (defaultOptions, Options(..), deriveJSON)
+import           Data.Aeson
+import           Data.Aeson.TH                  ( defaultOptions
+                                                , Options(..)
+                                                , deriveJSON
+                                                )
 import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
-import           Data.Text (Text, pack)
+import           Data.Text                      ( Text
+                                                , pack
+                                                )
 import           Servant.Auth.Server
 import           Control.Lens                   ( (^.)
                                                 , (^?!)
@@ -66,5 +71,4 @@ $(deriveJSON defaultOptions  ''ClientSleep)
 instance ToJWT User
 instance FromJWT User where
     decodeJWT claimsSet = Right $ User (pack $ show uid) Nothing Nothing
-                            where
-                                uid = (fromJust $ claimsSet ^. claimSub) ^?! string
+        where uid = (fromJust $ claimsSet ^. claimSub) ^?! string
