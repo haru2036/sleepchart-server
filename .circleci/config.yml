@@ -13,10 +13,7 @@ jobs:
             - sleepchart-server-{{ checksum "stack.yaml" }}
       - run:
         name: Install non-cabal dependencies
-        command: "apt-get update && \
-                  apt-get upgrade -y --assume-yes && \
-                  apt-get install -y --assume-yes xz-utils gcc libgmp-dev zlib1g-dev && \
-                  apt-get install -y --assume-yes libpq-dev "
+        command: apt-get update && apt-get upgrade -y --assume-yes && apt-get install -y --assume-yes xz-utils gcc libgmp-dev zlib1g-dev && apt-get install -y --assume-yes libpq-dev 
       - run:
           name: Resolve/Update Dependencies
           command: stack setup
