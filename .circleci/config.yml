@@ -19,7 +19,7 @@ jobs:
           command: stack setup
       - run:
           name: Run tests
-          command: stack test -j1
+          command: stack test -j2
       - run:
           name: Run hlint
           command: |
@@ -28,7 +28,7 @@ jobs:
             curl -sL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
       - run:
           name: Install executable
-          command: stack install -j1
+          command: stack install -j2
       - save_cache:
           name: Cache Dependencies
           key: sleepchart-server-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}
