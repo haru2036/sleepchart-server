@@ -59,7 +59,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 |]
 
 instance Eq User where
-    (==) x y = (userUid x) == (userUid y)
+    (==) x y = userUid x == userUid y
 
 data ClientSleep = ClientSleep {csStart :: UTCTime
                                ,csEnd :: UTCTime}
@@ -71,4 +71,4 @@ $(deriveJSON defaultOptions  ''ClientSleep)
 instance ToJWT User
 instance FromJWT User where
     decodeJWT claimsSet = Right $ User (pack $ show uid) Nothing Nothing
-        where uid = (fromJust $ claimsSet ^. claimSub) ^?! string
+        where uid = fromJust (claimsSet ^. claimSub) ^?! string
