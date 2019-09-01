@@ -4,6 +4,7 @@ module Api.User where
 
 import           Control.Monad.IO.Class         ( liftIO )
 import           Control.Monad.Trans            ( lift )
+import           Control.Monad.Trans.Reader
 import           Servant
 import           Database.Persist
 import           Database.Persist.Sql
@@ -17,9 +18,11 @@ data RegisterResult = RegSuccess | AlreadyTaken
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4, constructorTagModifier = map toLower} ''RegisterResult)
 
-registerUser :: ConnectionPool -> User -> Handler RegisterResult
-registerUser pool user = liftIO $ flip runSqlPool pool $ do
-      mUser <- getByValue user
-      case mUser of
-            Just user -> return AlreadyTaken
-            Nothing   -> insert user >> return RegSuccess
+registerUser :: ReaderT (ConnectionPool, User) Handler RegisterResult
+registerUser = do
+      (pool, user) <- ask
+      liftIO $ flip runSqlPool pool $ do
+            mUser <- getByValue user
+            case mUser of
+                  Just user -> return AlreadyTaken
+                  Nothing   -> insert user >> return RegSuccess

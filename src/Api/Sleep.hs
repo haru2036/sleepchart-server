@@ -8,29 +8,32 @@ import           Control.Monad.IO.Class
 import           DataStore.Internal
 import           Api.Common
 import           Data.Time.Clock
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans
 
-getSleeps :: ConnectionPool -> User -> Handler [ClientSleep]
-getSleeps pool user =
-    doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
+getSleeps :: ReaderT (ConnectionPool, User) Handler [ClientSleep]
+getSleeps = do
+    (pool, user) <- ask
+    lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         list <- selectList [SleepUser ==. user] [Desc SleepStart]
         return $ map (toClientSleep . entityVal) list
 
 getSleepsWithRange
-    :: ConnectionPool
-    -> User
-    -> Maybe UTCTime
+    :: Maybe UTCTime
     -> Maybe Int
-    -> Handler [ClientSleep]
-getSleepsWithRange pool user (Just start) (Just count) =
-    doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
+    -> ReaderT (ConnectionPool, User) Handler [ClientSleep]
+getSleepsWithRange (Just start) (Just count) = do
+    (pool, user) <- ask
+    lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         list <- selectList [SleepUser ==. user, SleepStart <. start]
                            [Desc SleepStart, LimitTo count]
         return $ map (toClientSleep . entityVal) list
-getSleepsWithRange _ _ _ _ = throwAll err400
+getSleepsWithRange  _ _ = throwAll err400
 
-postSleeps :: ConnectionPool -> User -> [ClientSleep] -> Handler [ClientSleep]
-postSleeps pool user sleeps =
-    doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
+postSleeps ::  [ClientSleep] -> ReaderT (ConnectionPool, User) Handler [ClientSleep]
+postSleeps sleeps = do
+    (pool, user) <- ask
+    lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         _    <- putMany $ map (fromClientSleep user) sleeps
         list <- selectList [SleepUser ==. user] [Desc SleepStart]
         return $ map (toClientSleep . entityVal) list
