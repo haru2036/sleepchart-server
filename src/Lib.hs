@@ -31,6 +31,7 @@ import Control.Monad.Except (catchError)
 import Control.Lens ((^.))
 import Database.Persist.Sql
 import DataStore.Internal
+import Types
 import Model
 import Api.Sleep
 import Api.User
@@ -48,8 +49,6 @@ type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
 
 protectedApi :: Proxy ProtectedAPI
 protectedApi = Proxy
-
-type ProtectedHandler = ReaderT (ConnectionPool, User) Handler
 
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI 
 protected pool (Servant.Auth.Server.Authenticated user) = hoistServer protectedApi (`runReaderT` (pool, user)) $ getSleeps
