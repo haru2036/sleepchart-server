@@ -55,6 +55,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
         user User
         start UTCTime
         end UTCTime
+        rating Int Maybe
         deriving Show Eq
 |]
 
@@ -62,7 +63,8 @@ instance Eq User where
     (==) x y = userUid x == userUid y
 
 data ClientSleep = ClientSleep {csStart :: UTCTime
-                               ,csEnd :: UTCTime}
+                               ,csEnd :: UTCTime
+                               ,csRating :: Maybe Int}
                                deriving(Show, Eq)
 
 $(deriveJSON defaultOptions  ''ClientSleep)
