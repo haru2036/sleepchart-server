@@ -41,7 +41,7 @@ postSleeps sleeps = do
 
 
 toClientSleep :: Sleep -> ClientSleep
-toClientSleep s = ClientSleep (sleepStart s) (sleepEnd s)
+toClientSleep s = ClientSleep (sleepStart s) (sleepEnd s) (sleepRating s)
 
 fromClientSleep :: User -> ClientSleep -> Sleep
-fromClientSleep user cs = Sleep user (csStart cs) (csEnd cs)
+fromClientSleep user cs = Sleep user (csStart cs) (csEnd cs) (csRating cs)
