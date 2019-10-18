@@ -31,7 +31,6 @@ import Control.Monad.Except (catchError)
 import Control.Lens ((^.))
 import Database.Persist.Sql
 import DataStore.Internal
-import Types
 import Model
 import Api.Sleep
 import Api.User
