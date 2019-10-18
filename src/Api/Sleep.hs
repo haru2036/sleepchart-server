@@ -6,12 +6,13 @@ import           Database.Persist.Sql
 import           Database.Persist.Class
 import           Control.Monad.IO.Class
 import           DataStore.Internal
-import           Api.Common
 import           Data.Time.Clock
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans
+import           Api.Common
+import           Api.Types
 
-getSleeps :: ReaderT (ConnectionPool, User) Handler [ClientSleep]
+getSleeps :: RegisteredHandler [ClientSleep]
 getSleeps = do
     (pool, user) <- ask
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
@@ -21,7 +22,7 @@ getSleeps = do
 getSleepsWithRange
     :: Maybe UTCTime
     -> Maybe Int
-    -> ReaderT (ConnectionPool, User) Handler [ClientSleep]
+    -> RegisteredHandler [ClientSleep]
 getSleepsWithRange (Just start) (Just count) = do
     (pool, user) <- ask
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
@@ -30,7 +31,7 @@ getSleepsWithRange (Just start) (Just count) = do
         return $ map (toClientSleep . entityVal) list
 getSleepsWithRange  _ _ = throwAll err400
 
-postSleeps ::  [ClientSleep] -> ReaderT (ConnectionPool, User) Handler [ClientSleep]
+postSleeps ::  [ClientSleep] -> RegisteredHandler [ClientSleep]
 postSleeps sleeps = do
     (pool, user) <- ask
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
