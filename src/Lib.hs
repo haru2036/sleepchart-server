@@ -49,8 +49,6 @@ type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
 protectedApi :: Proxy ProtectedAPI
 protectedApi = Proxy
 
-type ProtectedHandler = ReaderT (ConnectionPool, User) Handler
-
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI 
 protected pool (Servant.Auth.Server.Authenticated user) = hoistServer protectedApi (`runReaderT` (pool, user)) $ getSleeps
                                                     :<|> postSleeps 
