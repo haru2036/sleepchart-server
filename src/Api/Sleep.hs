@@ -46,9 +46,11 @@ putSleep cs = do
         case csId cs of
             Just cskey -> do
                 Just sleep <- get cskey
-                case sleepUser sleep == user of
-                    True -> replace cskey (fromClientSleep user cs) >> return cs
-                    False -> undefined -- todo:403を返す
+                if sleepUser sleep == user then
+                    replace cskey (fromClientSleep user cs) >> return cs
+                else
+                    undefined
+                    
             Nothing -> insert (fromClientSleep user cs) >>= \key -> return $ cs {csId = Just key}
 
 
