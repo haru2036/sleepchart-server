@@ -17,7 +17,7 @@ getSleeps = do
     (pool, user) <- ask
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         list <- selectList [SleepUser ==. user] [Desc SleepStart]
-        return $ map (toClientSleep . entityVal) list
+        return $ map toClientSleep list
 
 getSleepsWithRange
     :: Maybe UTCTime
@@ -28,7 +28,7 @@ getSleepsWithRange (Just start) (Just count) = do
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         list <- selectList [SleepUser ==. user, SleepStart <. start]
                            [Desc SleepStart, LimitTo count]
-        return $ map (toClientSleep . entityVal) list
+        return $ map toClientSleep list
 getSleepsWithRange  _ _ = throwAll err400
 
 postSleeps ::  [ClientSleep] -> RegisteredHandler [ClientSleep]
@@ -37,11 +37,27 @@ postSleeps sleeps = do
     lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $ do
         _    <- putMany $ map (fromClientSleep user) sleeps
         list <- selectList [SleepUser ==. user] [Desc SleepStart]
-        return $ map (toClientSleep . entityVal) list
+        return $ map toClientSleep list
+
+putSleep :: ClientSleep -> RegisteredHandler ClientSleep
+putSleep cs = do
+    (pool, user) <- ask
+    lift $ doIfRegistered pool user $ return $ liftIO $ flip runSqlPool pool $
+        case csId cs of
+            Just cskey -> do
+                Just sleep <- get cskey
+                case sleepUser sleep == user of
+                    True -> replace cskey (fromClientSleep user cs) >> return cs
+                    False -> undefined -- todo:403を返す
+            Nothing -> insert (fromClientSleep user cs) >>= \key -> return $ cs {csId = Just key}
 
 
-toClientSleep :: Sleep -> ClientSleep
-toClientSleep s = ClientSleep (sleepStart s) (sleepEnd s) (sleepRating s)
+
+
+toClientSleep :: Entity Sleep -> ClientSleep
+toClientSleep s = ClientSleep (Just key) (sleepStart sleep) (sleepEnd sleep) (sleepRating sleep)
+                    where sleep = entityVal s
+                          key = entityKey s
 
 fromClientSleep :: User -> ClientSleep -> Sleep
 fromClientSleep user cs = Sleep user (csStart cs) (csEnd cs) (csRating cs)
