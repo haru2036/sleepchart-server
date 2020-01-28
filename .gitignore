@@ -3,3 +3,5 @@
 jwk.json
 audience.json
 conf/database-setting.yml
+*.rej
+*.orig

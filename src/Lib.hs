@@ -43,17 +43,17 @@ type API auths  = (Servant.Auth.Server.Auth auths User :> ProtectedAPI)
 
 type ProtectedAPI = "api" :> "sleeps" :> Get '[JSON] [ClientSleep]
                :<|> "api" :> "sleeps" :> ReqBody '[JSON] [ClientSleep] :> Post '[JSON] [ClientSleep]
+               :<|> "api" :> "sleeps" :> ReqBody '[JSON] ClientSleep :> Put '[JSON] ClientSleep
                :<|> "api" :> "sleeps" :> "range" :> QueryParam "start" UTCTime :> QueryParam "count" Int :> Get '[JSON] [ClientSleep]
                :<|> "api" :> "register" :> Get '[JSON] RegisterResult
 
 protectedApi :: Proxy ProtectedAPI
 protectedApi = Proxy
 
-type ProtectedHandler = ReaderT (ConnectionPool, User) Handler
-
 protected :: ConnectionPool -> Servant.Auth.Server.AuthResult User -> Server ProtectedAPI 
 protected pool (Servant.Auth.Server.Authenticated user) = hoistServer protectedApi (`runReaderT` (pool, user)) $ getSleeps
                                                     :<|> postSleeps 
+                                                    :<|> putSleep
                                                     :<|> getSleepsWithRange 
                                                     :<|> registerUser 
 protected _ _ =  throwAll err401
